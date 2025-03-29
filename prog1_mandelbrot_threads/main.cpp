@@ -140,7 +140,7 @@ int main(int argc, char** argv) {
 
   // compute average time for each thread
   for (int i = 0; i < numThreads; i++) {
-    time_for_thread[i] /= numThreads;
+    time_for_thread[i] /= 5;
   }
   for (int i = 0; i < numThreads; i++) {
     printf("[mandelbrot thread %d]:\t\t[%.3f] ms\n", i,

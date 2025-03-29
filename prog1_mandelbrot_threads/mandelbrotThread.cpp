@@ -47,9 +47,6 @@ void workerThreadStart(WorkerArgs* const args) {
     // now the start and end row must change.
     const int startRow = taskId * args->height / args->totalTasks;
     const int endRow = (taskId + 1) * args->height / args->totalTasks;
-    if (endRow > args->height) {
-      break;
-    }
 
     for (int j = startRow; j < endRow; j++) {
       for (unsigned int i = 0; i < args->width; ++i) {
@@ -104,7 +101,7 @@ void mandelbrotThread(int numThreads, float x0, float y0, float x1, float y1,
     args[i].maxIterations = maxIterations;
     args[i].output = output;
     args[i].time = time;
-    args[i].totalTasks = numThreads * 4;
+    args[i].totalTasks = numThreads * 100;
     args[i].threadId = i;
   }
 
