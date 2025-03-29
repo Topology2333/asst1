@@ -14,6 +14,7 @@ typedef struct {
   int* output;
   int threadId;
   int numThreads;
+  float time;
 } WorkerArgs;
 
 extern void mandelbrotSerial(float x0, float y0, float x1, float y1, int width,
@@ -30,6 +31,7 @@ void workerThreadStart(WorkerArgs* const args) {
   // to compute a part of the output image.  For example, in a
   // program that uses two threads, thread 0 could compute the top
   // half of the image and thread 1 could compute the bottom half.
+  double startTime = CycleTimer::currentSeconds();
 
   const float dx = (args->x1 - args->x0) / args->width;
   const float dy = (args->y1 - args->y0) / args->height;
@@ -46,6 +48,9 @@ void workerThreadStart(WorkerArgs* const args) {
       args->output[index] = mandel(x, y, args->maxIterations);
     }
   }
+
+  double endTime = CycleTimer::currentSeconds();
+  args->time = endTime - startTime;
 }
 
 //
@@ -54,7 +59,8 @@ void workerThreadStart(WorkerArgs* const args) {
 // Multi-threaded implementation of mandelbrot set image generation.
 // Threads of execution are created by spawning std::threads.
 void mandelbrotThread(int numThreads, float x0, float y0, float x1, float y1,
-                      int width, int height, int maxIterations, int output[]) {
+                      int width, int height, int maxIterations, int output[],
+                      float time[]) {
   static constexpr int MAX_THREADS = 32;
 
   if (numThreads > MAX_THREADS) {
@@ -79,7 +85,7 @@ void mandelbrotThread(int numThreads, float x0, float y0, float x1, float y1,
     args[i].maxIterations = maxIterations;
     args[i].numThreads = numThreads;
     args[i].output = output;
-
+    args[i].time = 0.f;
     args[i].threadId = i;
   }
 
@@ -96,5 +102,7 @@ void mandelbrotThread(int numThreads, float x0, float y0, float x1, float y1,
   // join worker threads
   for (int i = 1; i < numThreads; i++) {
     workers[i].join();
+    time[i] += args[i].time;
   }
+  time[0] += args[0].time;
 }

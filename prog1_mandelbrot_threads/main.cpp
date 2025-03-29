@@ -2,6 +2,7 @@
 #include <stdio.h>
 
 #include <algorithm>
+#include <cstring>
 
 #include "CycleTimer.h"
 
@@ -11,7 +12,7 @@ extern void mandelbrotSerial(float x0, float y0, float x1, float y1, int width,
 
 extern void mandelbrotThread(int numThreads, float x0, float y0, float x1,
                              float y1, int width, int height, int maxIterations,
-                             int output[]);
+                             int output[], float time_for_thread[]);
 
 extern void writePPMImage(int* data, int width, int height,
                           const char* filename, int maxIterations);
@@ -100,6 +101,9 @@ int main(int argc, char** argv) {
 
   int* output_serial = new int[width * height];
   int* output_thread = new int[width * height];
+  float* time_for_thread = new float[numThreads];
+
+  memset(time_for_thread, 0, numThreads * sizeof(float));
 
   //
   // Run the serial implementation.  Run the code three times and
@@ -129,9 +133,18 @@ int main(int argc, char** argv) {
     memset(output_thread, 0, width * height * sizeof(int));
     double startTime = CycleTimer::currentSeconds();
     mandelbrotThread(numThreads, x0, y0, x1, y1, width, height, maxIterations,
-                     output_thread);
+                     output_thread, time_for_thread);
     double endTime = CycleTimer::currentSeconds();
     minThread = std::min(minThread, endTime - startTime);
+  }
+
+  // compute average time for each thread
+  for (int i = 0; i < numThreads; i++) {
+    time_for_thread[i] /= numThreads;
+  }
+  for (int i = 0; i < numThreads; i++) {
+    printf("[mandelbrot thread %d]:\t\t[%.3f] ms\n", i,
+           time_for_thread[i] * 1000);
   }
 
   printf("[mandelbrot thread]:\t\t[%.3f] ms\n", minThread * 1000);
