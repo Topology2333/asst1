@@ -37,21 +37,6 @@
    SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-static inline int mandel(float c_re, float c_im, int count) {
-  float z_re = c_re, z_im = c_im;
-  int i;
-  for (i = 0; i < count; ++i) {
-    if (z_re * z_re + z_im * z_im > 4.f) break;
-
-    float new_re = z_re * z_re - z_im * z_im;
-    float new_im = 2.f * z_re * z_im;
-    z_re = c_re + new_re;
-    z_im = c_im + new_im;
-  }
-
-  return i;
-}
-
 //
 // MandelbrotSerial --
 //
@@ -63,6 +48,9 @@ static inline int mandel(float c_re, float c_im, int count) {
 //   into the image viewport.
 // * width, height describe the size of the output image
 // * startRow, totalRows describe how much of the image to compute
+
+#include "mandel.h"
+
 void mandelbrotSerial(float x0, float y0, float x1, float y1, int width,
                       int height, int startRow, int totalRows,
                       int maxIterations, int output[]) {

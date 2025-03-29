@@ -3,6 +3,7 @@
 #include <thread>
 
 #include "CycleTimer.h"
+#include "mandel.h"
 
 typedef struct {
   float x0, x1;
@@ -30,7 +31,21 @@ void workerThreadStart(WorkerArgs* const args) {
   // program that uses two threads, thread 0 could compute the top
   // half of the image and thread 1 could compute the bottom half.
 
-  printf("Hello world from thread %d\n", args->threadId);
+  const float dx = (args->x1 - args->x0) / args->width;
+  const float dy = (args->y1 - args->y0) / args->height;
+
+  const int startRow = args->threadId * args->height / args->numThreads;
+  const int endRow = (args->threadId + 1) * args->height / args->numThreads;
+
+  for (int j = startRow; j < endRow; j++) {
+    for (unsigned int i = 0; i < args->width; ++i) {
+      const float x = args->x0 + i * dx;
+      const float y = args->y0 + j * dy;
+
+      const int index = (j * args->width + i);
+      args->output[index] = mandel(x, y, args->maxIterations);
+    }
+  }
 }
 
 //
@@ -75,6 +90,7 @@ void mandelbrotThread(int numThreads, float x0, float y0, float x1, float y1,
     workers[i] = std::thread(workerThreadStart, &args[i]);
   }
 
+  // the main thread is used as a worker as well
   workerThreadStart(&args[0]);
 
   // join worker threads
