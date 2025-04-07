@@ -342,11 +342,14 @@ float arraySumVector(float* values, int N) {
 
   __cs149_mask maskAll = _cs149_init_ones();
 
-  float result = 0.0f;
+  int newSize = N / VECTOR_WIDTH;
+  if (N % VECTOR_WIDTH != 0) newSize++;
+  float B[newSize] = {0};
 
-  for (int i = 0; i < N; i += VECTOR_WIDTH) {
+  for (int i = 0; i < newSize; i++) {
     int local = VECTOR_WIDTH / 2;
-    _cs149_vload_float(local_vec, values + i, maskAll);
+    _cs149_vset_float(local_vec, 0.f, maskAll);
+    _cs149_vload_float(local_vec, values + i * VECTOR_WIDTH, maskAll);
 
     while (local) {
       // compute the sum from 0 to local - 1
@@ -356,9 +359,9 @@ float arraySumVector(float* values, int N) {
       _cs149_interleave_float(local_vec, tmp);
       local /= 2;
     }
-    // the local sum is local_vec[0]
-    result += local_vec.value[0];
+    // load the result into B
+    B[i] = local_vec.value[0];
   }
 
-  return result;
+  return arraySumSerial(B, newSize);
 }
