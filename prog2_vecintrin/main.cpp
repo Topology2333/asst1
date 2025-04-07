@@ -337,8 +337,28 @@ float arraySumVector(float* values, int N) {
   // here
   //
 
+  __cs149_vec_float tmp;
+  __cs149_vec_float local_vec;
+
+  __cs149_mask maskAll = _cs149_init_ones();
+
+  float result = 0.0f;
+
   for (int i = 0; i < N; i += VECTOR_WIDTH) {
+    int local = VECTOR_WIDTH / 2;
+    _cs149_vload_float(local_vec, values + i, maskAll);
+
+    while (local) {
+      // compute the sum from 0 to local - 1
+      // add every adj elements
+      _cs149_hadd_float(tmp, local_vec);
+      // swap odd and even indexing
+      _cs149_interleave_float(local_vec, tmp);
+      local /= 2;
+    }
+    // the local sum is local_vec[0]
+    result += local_vec.value[0];
   }
 
-  return 0.0;
+  return result;
 }
