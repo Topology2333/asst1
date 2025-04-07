@@ -264,9 +264,12 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
 
   // set mask to all ones
   __cs149_mask maskAll = _cs149_init_ones();
-  __cs149_vec_int zeros = _cs149_vset_int(0);
-  __cs149_vec_int ones = _cs149_vset_int(1);
-  __cs149_vec_float nines = _cs149_vset_float(nine);
+  __cs149_vec_int zeros;
+  _cs149_vset_int(zeros, 0, maskAll);
+  __cs149_vec_int ones;
+  _cs149_vset_int(ones, 1, maskAll);
+  __cs149_vec_float nines;
+  _cs149_vset_float(nines, nine, maskAll);
 
   __cs149_vec_float x;
   __cs149_vec_int y;
