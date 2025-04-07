@@ -258,6 +258,7 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
   // assume that N%width == 0
   int count = N / VECTOR_WIDTH;
   if (N % VECTOR_WIDTH != 0) count++;
+  __cs149_mask lastMask = _cs149_init_ones(N % VECTOR_WIDTH);
 
   float nine = 9.999999f;
 
@@ -304,7 +305,11 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
       // set tempOutput to nine
       _cs149_vset_float(tempOutput[i], nine, maskBiggerThanNines);
       // write back to the output
-      _cs149_vstore_float(output + VECTOR_WIDTH * i, tempOutput[i], maskAll);
+      // notice that the last should not be maskAll
+      if (i == count - 1 && N % VECTOR_WIDTH != 0)
+        _cs149_vstore_float(output + VECTOR_WIDTH * i, tempOutput[i], lastMask);
+      else
+        _cs149_vstore_float(output + VECTOR_WIDTH * i, tempOutput[i], maskAll);
     }
   }
 }
