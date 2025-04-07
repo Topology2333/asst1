@@ -10,4 +10,4 @@ myexp: CS149intrin.o logger.o main.cpp
 	g++ -I../common logger.o CS149intrin.o main.cpp -o myexp
 
 clean:
-	rm -f *.o myexp *~
+	rm -rf *.o myexp *~ compile_commands.json .cache/
