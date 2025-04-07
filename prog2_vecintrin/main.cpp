@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include <algorithm>
+#include <cstdint>
 
 #include "CS149intrin.h"
 #include "logger.h"
@@ -254,6 +255,58 @@ void clampedExpVector(float* values, int* exponents, float* output, int N) {
   // Your solution should work for any value of
   // N and VECTOR_WIDTH, not just when VECTOR_WIDTH divides N
   //
+  // assume that N%width == 0
+  int count = N / VECTOR_WIDTH;
+  if (N % VECTOR_WIDTH != 0) count++;
+
+  float nine = 9.999999f;
+
+  // set mask to all ones
+  __cs149_mask maskAll = _cs149_init_ones();
+  __cs149_vec_int zeros = _cs149_vset_int(0);
+  __cs149_vec_int ones = _cs149_vset_int(1);
+  __cs149_vec_float nines = _cs149_vset_float(nine);
+
+  __cs149_vec_float x;
+  __cs149_vec_int y;
+
+  // set temp output
+  __cs149_vec_float tempOutput[count];
+
+  for (int i = 0; i < count; i++) {
+    // init x and y
+    _cs149_vset_float(x, 0.f, maskAll);
+    _cs149_vset_int(y, 0, maskAll);
+    _cs149_vset_float(tempOutput[i], 1.0f, maskAll);
+
+    // get x and y from input
+    _cs149_vload_float(x, values + VECTOR_WIDTH * i, maskAll);
+    _cs149_vload_int(y, exponents + VECTOR_WIDTH * i, maskAll);
+
+    // init not zero mask, init mask tmp;
+    __cs149_mask maskIsNotZero = _cs149_init_ones();
+    __cs149_mask maskTemp = _cs149_init_ones();
+    __cs149_mask maskBiggerThanNines = _cs149_init_ones();
+
+    while (true) {
+      // check if all y is 0, maskTmp now contains all 0s
+      _cs149_veq_int(maskTemp, y, zeros, maskIsNotZero);
+      // update maskIsNotZero
+      maskIsNotZero = _cs149_mask_not(maskTemp);
+      // check if all zero, then break
+      if (_cs149_cntbits(maskIsNotZero) == 0) break;
+      // else, for all the y that is not zero, y = y - 1
+      _cs149_vsub_int(y, y, ones, maskIsNotZero);
+      // x = result * x
+      _cs149_vmult_float(tempOutput[i], tempOutput[i], x, maskIsNotZero);
+      // for all the tempOutput bigger than nines, set it to nines
+      _cs149_vgt_float(maskBiggerThanNines, tempOutput[i], nines, maskAll);
+      // set tempOutput to nine
+      _cs149_vset_float(tempOutput[i], nine, maskBiggerThanNines);
+      // write back to the output
+      _cs149_vstore_float(output + VECTOR_WIDTH * i, tempOutput[i], maskAll);
+    }
+  }
 }
 
 // returns the sum of all elements in values
