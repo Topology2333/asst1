@@ -34,6 +34,15 @@ analysis: $(APP_NAME)
 	@gnuplot -e "set terminal pngcairo size 800,600; set output 'output'; set yrange [0:*]; set xlabel 'threads'; set ylabel 'speedup'; plot '$(ANALYSIS_FILE)' with lines" 
 	@display output
 
+multirun:
+	@threads=1; while [ $$threads -le 50 ]; do \
+		./$(APP_NAME) -t 8 >> $(ANALYSIS_FILE); \
+		threads=$$((threads + 1)); \
+	done
+	# sed -Eni 's/.*([0-9]+\.[0-9]+)x.*from ([0-9]+).*/\2 \1/p' analysis.txt
+	# @gnuplot -e "set terminal pngcairo size 800,600; set output 'output'; set yrange [0:*]; set xlabel 'threads'; set ylabel 'speedup'; plot temp.txt with lines"
+	# @display output
+
 
 clean:
 		/bin/rm -rf $(OBJDIR) *.ppm *~ $(APP_NAME) .cache compile_commands.json analysis.txt output

@@ -6,8 +6,6 @@
 #include "CycleTimer.h"
 #include "mandel.h"
 
-std::atomic<int> nextTask(0);
-
 typedef struct {
   float x0, x1;
   float y0, y1;
@@ -16,7 +14,8 @@ typedef struct {
   int maxIterations;
   int* output;
   int threadId;
-  int totalTasks;
+  int pointsPerThread;
+  int numThreads;
   float* time;
 } WorkerArgs;
 
@@ -36,27 +35,26 @@ void workerThreadStart(WorkerArgs* const args) {
   // half of the image and thread 1 could compute the bottom half.
   double startTime = CycleTimer::currentSeconds();
 
-  while (true) {
-    // get next task and add by 1
-    int taskId = nextTask.fetch_add(1);
-    if (taskId >= args->totalTasks) break;
+  // get next task and add by 1
 
-    const float dx = (args->x1 - args->x0) / args->width;
-    const float dy = (args->y1 - args->y0) / args->height;
+  const float dx = (args->x1 - args->x0) / args->width;
+  const float dy = (args->y1 - args->y0) / args->height;
 
-    // now the start and end row must change.
-    const int startRow = taskId * args->height / args->totalTasks;
-    const int endRow = (taskId + 1) * args->height / args->totalTasks;
+  // now the start and end row must change.
+  // int point = args->threadId;
+  int point = args->width * args->height - args->threadId + 1;
+  int totalPoints = args->width * args->height;
 
-    for (int j = startRow; j < endRow; j++) {
-      for (unsigned int i = 0; i < args->width; ++i) {
-        const float x = args->x0 + i * dx;
-        const float y = args->y0 + j * dy;
-
-        const int index = (j * args->width + i);
-        args->output[index] = mandel(x, y, args->maxIterations);
-      }
-    }
+  //  for (int s = args->threadId * args->pointsPerThread; point < totalPoints;
+  //     point += args->numThreads, s++) {
+  for (int s = args->threadId * args->pointsPerThread; point >= 0;
+       point -= args->numThreads, s++) {
+    int i = point % args->width;
+    int j = point / args->width;
+    const float x = args->x0 + i * dx;
+    const float y = args->y0 + j * dy;
+    // args->output[point] = mandel(x, y, args->maxIterations);
+    args->output[s] = mandel(x, y, args->maxIterations);
   }
 
   double endTime = CycleTimer::currentSeconds();
@@ -75,7 +73,6 @@ void mandelbrotThread(int numThreads, float x0, float y0, float x1, float y1,
   // case computation time, when devided by the number of threads
   // so we can part the computation by height/(4*numThreads)
   // and build a pool for threads to compute
-  nextTask.store(0, std::memory_order_relaxed);
 
   static constexpr int MAX_THREADS = 32;
 
@@ -83,6 +80,11 @@ void mandelbrotThread(int numThreads, float x0, float y0, float x1, float y1,
     fprintf(stderr, "Error: Max allowed threads is %d\n", MAX_THREADS);
     exit(1);
   }
+  if (height * width % numThreads != 0) {
+    fprintf(stderr, "Error: height*width must be divisible by numThreads\n");
+    exit(1);
+  }
+  const int pointsPerThread = height * width / numThreads;
 
   // Creates thread objects that do not yet represent a thread.
   std::thread workers[MAX_THREADS];
@@ -101,7 +103,8 @@ void mandelbrotThread(int numThreads, float x0, float y0, float x1, float y1,
     args[i].maxIterations = maxIterations;
     args[i].output = output;
     args[i].time = time;
-    args[i].totalTasks = numThreads * 100;
+    args[i].pointsPerThread = pointsPerThread;
+    args[i].numThreads = numThreads;
     args[i].threadId = i;
   }
 
