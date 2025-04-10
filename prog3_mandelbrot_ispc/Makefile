@@ -3,6 +3,7 @@ CXXFLAGS=-I../common -Iobjs/ -O3 -Wall -fPIC -ffp-contract=off
 ISPC=ispc
 # note: requires AVX2
 # disabling AVX2 FMA since it causes a difference in output compared to reference on Mandelbrot 
+# it is possible to enable fma for more performance... with the same output in my device...
 ISPCFLAGS=-O3 --target=avx2-i32x8 --arch=x86-64 --opt=disable-fma --pic
 
 APP_NAME=mandelbrot_ispc
